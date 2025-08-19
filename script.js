@@ -75,6 +75,70 @@
 // Se l’array di ricerca è vuoto, invece di far fallire l'intera funzione, semplicemente i dati relativi a quella chiamata verranno settati a null e la frase relativa non viene stampata. Testa la funzione con la query “vienna” (non trova il meteo).
 
 
+// const apiUrl = "http://localhost:3333"
+
+// async function fetchUrl(url) {
+//     const response = await fetch(url)
+//     const obj = await response.json()
+
+//     return obj
+// }
+
+
+
+// async function getDashboardData(query) {
+//     try {
+//         // Chiamate api
+//         const destinationPromise = fetchUrl(`${apiUrl}/destinations?search=${query}`)
+//         const weatherPromise = fetchUrl(`${apiUrl}/weathers?search=${query}`)
+//         const airportPromise = fetchUrl(`${apiUrl}/airports?search=${query}`)
+
+//         // Array di primises
+//         const promises = [destinationPromise, weatherPromise, airportPromise]
+
+//         // Destruturazione
+//         const [destination, weather, airport] = await Promise.all(promises)
+
+//         return {
+//             city: (destination.length === 0 ? null : destination[0].name),
+//             country: (destination.length === 0 ? null : destination[0].country),
+//             temperature: (weather.length === 0 ? null : weather[0].temperature),
+//             weather: (weather.length === 0 ? null : weather[0].weather_description),
+//             airport: (airport.length === 0 ? null : airport[0].name)
+//         }
+//     }
+//     catch (error) {
+//         throw new Error("Errore nel recupero dei dati del api")
+//     }
+
+// }
+
+// const dashboard = getDashboardData("london")
+//     .then(dashboard => {
+//         console.log("I dati estrtti sono:", dashboard)
+//         console.log(`${dashboard.city == null || dashboard.country == null
+//             ? ""
+//             : `${dashboard.city} is in ${dashboard.country}.`}
+//         ${dashboard.weather == null
+//                 ? ""
+//                 : `Today there are ${dashboard.temperature} degrees and the weather is ${dashboard.weather}`} 
+//         The main airport is ${dashboard.airport == null
+//                 ? ""
+//                 : dashboard.airport}`)
+//     })
+//     .catch((error) => console.error(error))
+
+
+
+//     🎯 Bonus 2 - Chiamate fallite
+// Attualmente, se una delle chiamate fallisce, **Promise.all()** rigetta l'intera operazione.
+
+// Modifica `getDashboardData()` per usare **Promise.allSettled()**, in modo che:
+// Se una chiamata fallisce, i dati relativi a quella chiamata verranno settati a null.
+// Stampa in console un messaggio di errore per ogni richiesta fallita.
+// Testa la funzione con un link fittizio per il meteo (es. https://www.meteofittizio.it).
+
+
 const apiUrl = "http://localhost:3333"
 
 async function fetchUrl(url) {
@@ -87,7 +151,7 @@ async function fetchUrl(url) {
 
 
 async function getDashboardData(query) {
-    try {
+    
         // Chiamate api
         const destinationPromise = fetchUrl(`${apiUrl}/destinations?search=${query}`)
         const weatherPromise = fetchUrl(`${apiUrl}/weathers?search=${query}`)
@@ -97,23 +161,46 @@ async function getDashboardData(query) {
         const promises = [destinationPromise, weatherPromise, airportPromise]
 
         // Destruturazione
-        const [destination, weather, airport] = await Promise.all(promises)
+        const [destination, weather, airport] = await Promise.allSettled(promises)
+
+        // Errori personalizzati
+        if(destination.status === "rejected"){
+            console.error("Errore nel recupero della destinazione")
+        }
+
+        if(weather.status === "rejected"){
+            console.error("Errore nel recupero del meteo")
+        }
+
+        if(airport.status === "rejected"){
+            console.error("Errore nel recupero dell'aeroporto")
+        }
 
         return {
-            city: (destination.length === 0 ? null : destination[0].name),
-            country: (destination.length === 0 ? null : destination[0].country),
-            temperature: (weather.length === 0 ? null : weather[0].temperature),
-            weather: (weather.length === 0 ? null : weather[0].weather_description),
-            airport: (airport.length === 0 ? null : airport[0].name)
+             city: destination.status === 'fulfilled' && destination.value.length > 0
+        ? destination.value[0].name
+        : null,
+    
+    country: destination.status === 'fulfilled' && destination.value.length > 0
+        ? destination.value[0].country
+        : null,
+    
+    temperature: weather.status === 'fulfilled' && weather.value.length > 0
+        ? weather.value[0].temperature
+        : null,
+
+    weather: weather.status === 'fulfilled' && weather.value.length > 0
+        ? weather.value[0].weather_description
+        : null,
+
+    airport: airport.status === 'fulfilled' && airport.value.length > 0
+        ? airport.value[0].name
+        : null,
         }
-    }
-    catch (error) {
-        throw new Error("Errore nel recupero dei dati del api")
-    }
 
 }
 
-const dashboard = getDashboardData("london")
+const dashboard = getDashboardData("London")
     .then(dashboard => {
         console.log("I dati estrtti sono:", dashboard)
         console.log(`${dashboard.city == null || dashboard.country == null
@@ -126,4 +213,5 @@ const dashboard = getDashboardData("london")
                 ? ""
                 : dashboard.airport}`)
     })
-    .catch((error) => console.error(error))
+    .catch((error) => console.error("Dashbouard non disponibile", error.message))
+    

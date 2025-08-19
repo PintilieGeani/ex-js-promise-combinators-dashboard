@@ -29,7 +29,7 @@ const apiUrl = "http://localhost:3333"
 
 async function fetchUrl(url) {
     const response = await fetch(url)
-    const obj = response.json()
+    const obj = await response.json()
 
     return obj
 }
@@ -37,68 +37,37 @@ async function fetchUrl(url) {
 
 
 async function getDashboardData(query) {
+    try{
+        // Chiamate api
+        const destinationPromise = fetchUrl(`${apiUrl}/destinations?search=${query}`)
+        const weatherPromise =  fetchUrl(`${apiUrl}/weathers?search=${query}`)
+        const airportPromise = fetchUrl(`${apiUrl}/airports?search=${query}`)
     
-    const getCity = async () =>{
-        const result = await fetchUrl(`${apiUrl}/destinations?search=${query}`)
-        const city = result[0].name
-        return city
-    }
+        // Array di primises
+        const promises = [destinationPromise, weatherPromise, airportPromise]
     
-    const city = getCity()
-    console.log(city)
-
-
-    const getCountry = async () =>{
-        const result = await fetchUrl(`${apiUrl}/destinations?search=${query}`)
-        const country = result[0].country
-        return country
-    }
-
-    const country = getCountry()
-
-    const getTemperature = async () =>{
-        const result = await fetchUrl(`${apiUrl}/weathers?search=${query}`)
-        const temperature = result[0].temperature
-        return temperature
-    }
-
-    const temperature = getTemperature()
-
-    const getDescription = async () =>{
-        const result = await fetchUrl(`${apiUrl}/weathers?search=${query}`)
-
-        const description = result[0].weather_description
-        return description
-    }
-
-    const description = getDescription()
-
-    const getAirport = async () =>{
-        const result = await fetchUrl(`${apiUrl}/airports?search=${query}`)
-
-        const airport = result[0].name
-        return airport
-    }
-
-    const airport = getAirport()
-
-
-    let promises = [city, country, temperature, description, airport]
-
-    const info = await Promise.all(promises)
-
-
-    const dashboard = {
-        city: info[0],
-        country:info[1] ,
-        temperature:info[2] ,
-        description:info[3] ,
-        airport:info[4] 
-    }
+        // Destruturazione
+        const [destination, weather, airport] = await Promise.all(promises)
     
-    return dashboard
+        return {
+            city: destination[0].name,
+            country: destination[0].country,
+            temperature: weather[0].temperature,
+            weather: weather[0].weather_description,
+            airport: airport[0].name
+        }
+    }
+    catch(error){
+        throw new Error("Errore nel recupero dei dati del api")
+    }
 
 }
 
-const dashboard = getDashboardData("Paris").then((resp) => console.log(resp))
+const dashboard = getDashboardData("Paris")
+.then(dashboard =>{
+    console.log("I dati estrtti sono:", dashboard)
+    console.log(`${dashboard.city} is in ${dashboard.country}. Today there are ${dashboard.temperature} degrees and the weather is ${dashboard.weather}. The mai airport is ${dashboard.airport}`)
+})
+.catch((error) => console.error(error))
+
 
